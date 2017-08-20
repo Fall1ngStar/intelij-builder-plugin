@@ -56,7 +56,7 @@ public class BuilderGenerator {
                     method.getBody().add(factory.createStatementFromText(builder.toString(), null));
                 });
         innerClass.add(method);
-        innerClass.getModifierList().setModifierProperty("private", true);
+        innerClass.getModifierList().setModifierProperty("public", true);
         innerClass.getModifierList().setModifierProperty("static", true);
         PsiMethod builderConstructor = factory.createConstructor();
         builderConstructor.getModifierList().setModifierProperty("private", true);
