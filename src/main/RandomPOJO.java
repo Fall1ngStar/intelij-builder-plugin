@@ -2,9 +2,6 @@ package main;
 
 import java.util.List;
 
-/**
- * Created by thierry on 19/08/17.
- */
 public class RandomPOJO {
     public final Integer aInteger;
     public final String aString;
@@ -17,6 +14,5 @@ public class RandomPOJO {
         this.aDouble = aDouble;
         this.aFloatList = aFloatList;
     }
-
 
 }

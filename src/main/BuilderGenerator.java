@@ -7,9 +7,12 @@ import java.util.stream.Stream;
 
 public class BuilderGenerator {
     private PsiClass clazz;
+    private PsiElementFactory factory;
+
 
     private BuilderGenerator(PsiClass clazz) {
         this.clazz = clazz;
+        factory = PsiElementFactory.SERVICE.getInstance(clazz.getProject());
     }
 
     public static BuilderGenerator of(PsiClass clazz) {
@@ -26,7 +29,6 @@ public class BuilderGenerator {
     }
 
     public void addBuilder() {
-        PsiElementFactory factory = PsiElementFactory.SERVICE.getInstance(clazz.getProject());
         PsiClass innerClass = factory.createClass("Builder");
         for (PsiField field : clazz.getAllFields()) {
             PsiMethod method = factory.createMethod(field.getName(), factory.createType(innerClass));
@@ -55,15 +57,23 @@ public class BuilderGenerator {
                 });
         innerClass.add(method);
         innerClass.getModifierList().setModifierProperty("private", true);
+        innerClass.getModifierList().setModifierProperty("static", true);
         PsiMethod builderConstructor = factory.createConstructor();
         builderConstructor.getModifierList().setModifierProperty("private", true);
         innerClass.add(builderConstructor);
         clazz.add(innerClass);
+        addBuildMethod(innerClass);
         addGetters();
     }
 
+    private void addBuildMethod(final PsiClass innerClass) {
+        PsiMethod method = factory.createMethod("builder", factory.createType(innerClass));
+        method.getBody().add(factory.createStatementFromText("return new " + innerClass.getName() + "();", null));
+        method.getModifierList().setModifierProperty("static", true);
+        clazz.add(method);
+    }
+
     private void addGetters() {
-        PsiElementFactory factory = PsiElementFactory.SERVICE.getInstance(clazz.getProject());
         for (PsiField field : clazz.getFields()) {
             PsiType type;
             if (field.getType().getPresentableText().contains("List")) {
@@ -78,23 +88,23 @@ public class BuilderGenerator {
                         factory.createStatementFromText("return this." + field.getName() + ";", null));
             } else {
                 getter.getBody().add(
-                        factory.createStatementFromText("return Optional.ofNullable(this."+ field.getName() + ");", null));
+                        factory.createStatementFromText("return Optional.ofNullable(this." + field.getName() + ");", null));
             }
             clazz.add(getter);
         }
     }
 
-    private String getNameForGetter(final String name){
+    private String getNameForGetter(final String name) {
         char[] sequence = name.toCharArray();
         sequence[0] = Character.toUpperCase(sequence[0]);
         return "get" + String.valueOf(sequence);
     }
-}
-/*
 
-Document document = PsiDocumentManager.getInstance(clazz.getProject()).getDocument(clazz.getContainingFile());
+    public void addOptionalImport() {
+        Document document = PsiDocumentManager.getInstance(clazz.getProject()).getDocument(clazz.getContainingFile());
         String text = document.getCharsSequence().toString();
         int firstSemicolon = text.indexOf(";");
-        text = text.substring(0, firstSemicolon) + "import java.util.Optional;" + text.substring(firstSemicolon);
+        text = text.substring(0, firstSemicolon + 1) + "import java.util.Optional;" + text.substring(firstSemicolon + 1);
         document.setText(text);
- */
+    }
+}
