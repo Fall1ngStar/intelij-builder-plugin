@@ -29,7 +29,7 @@ public class BuilderGenerator {
     }
 
     public void addBuilder() {
-        PsiClass innerClass = factory.createClass("Builder");
+        PsiClass innerClass = factory.createClass(clazz.getName() + "Builder");
         for (PsiField field : clazz.getAllFields()) {
             PsiMethod method = factory.createMethod(field.getName(), factory.createType(innerClass));
             method.getParameterList().add(factory.createParameter(field.getName(), field.getType()));
@@ -46,10 +46,10 @@ public class BuilderGenerator {
                 .ifPresent(constructor -> {
                     StringBuilder builder = new StringBuilder();
                     builder.append("return new " + clazz.getName() + "(");
-                    PsiField[] fields = clazz.getAllFields();
-                    for (int i = 0; i < fields.length; i++) {
-                        builder.append(fields[i].getName());
-                        if (i < fields.length - 1)
+                    PsiParameter[] parameters = constructor.getParameterList().getParameters();
+                    for (int i = 0; i < parameters.length; i++) {
+                        builder.append(parameters[i].getName());
+                        if (i < parameters.length - 1)
                             builder.append(", ");
                     }
                     builder.append(");");

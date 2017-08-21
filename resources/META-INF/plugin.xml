@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>fr.garcin.builder-plugin</id>
     <name>Builder generator plugin</name>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <vendor email="thierry.garcin@etu.univ-lyon1.fr">Thierry Garcin</vendor>
 
     <description><![CDATA[
@@ -9,8 +9,6 @@
     ]]></description>
 
     <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
     ]]>
     </change-notes>
 
