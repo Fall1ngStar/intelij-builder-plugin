@@ -2,8 +2,10 @@ package main;
 
 import java.util.List;
 import java.util.UUID;
+import java.io.Serializable;
 
-public class RandomPOJO extends ParentPOJO{
+public class RandomPOJO extends ParentPOJO implements Serializable{
+    private static final long serialVersionUID = -51531L;
     public final Integer aInteger;
     public final String aString;
     public final Double aDouble;
@@ -16,4 +18,6 @@ public class RandomPOJO extends ParentPOJO{
         this.aDouble = aDouble;
         this.aFloatList = aFloatList;
     }
+
+    
 }
