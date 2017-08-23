@@ -34,6 +34,8 @@ public class BuilderGenerator {
         innerClass.getModifierList().setModifierProperty("static", true);
 
         PsiMethod constructor = clazz.getConstructors()[0];
+        constructor.getModifierList().setModifierProperty("private", true);
+
         addInnerFields(innerClass, constructor);
         addBuildMethod(innerClass, constructor);
         addConstructor(innerClass);
@@ -80,7 +82,11 @@ public class BuilderGenerator {
         builder.append("return new " + clazz.getName() + "(");
         PsiParameter[] parameters = constructor.getParameterList().getParameters();
         for (int i = 0; i < parameters.length; i++) {
-            builder.append(parameters[i].getName());
+            if (parameters[i].getType().getPresentableText().contains("List")) {
+                builder.append("Collections.unmodifiableList(" +parameters[i].getName() +")");
+            } else {
+                builder.append(parameters[i].getName());
+            }
             if (i < parameters.length - 1)
                 builder.append(", ");
         }
