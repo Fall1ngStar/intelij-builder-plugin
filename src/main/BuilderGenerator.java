@@ -30,42 +30,19 @@ public class BuilderGenerator {
 
     public void addBuilder() {
         PsiClass innerClass = factory.createClass(clazz.getName() + "Builder");
-
-        PsiMethod constructor = clazz.getConstructors()[0];
-
-        for (PsiParameter parameter : constructor.getParameterList().getParameters()) {
-            PsiMethod method = factory.createMethod(parameter.getName(), factory.createType(innerClass));
-            method.getParameterList().add(factory.createParameter(parameter.getName(), parameter.getType()));
-            method.getBody().add(factory.createStatementFromText("this." + parameter.getName() + " = " + parameter.getName() + ";", null));
-            method.getBody().add(factory.createStatementFromText("return this;", null));
-            innerClass.add(method);
-            PsiField innerField = factory.createField(parameter.getName(), parameter.getType());
-            innerField.getModifierList().setModifierProperty("private", true);
-            innerClass.add(innerField);
-        }
-        PsiMethod method = factory.createMethod("build", factory.createType(clazz));
-        StringBuilder builder = new StringBuilder();
-        builder.append("return new " + clazz.getName() + "(");
-        PsiParameter[] parameters = constructor.getParameterList().getParameters();
-        for (int i = 0; i < parameters.length; i++) {
-            builder.append(parameters[i].getName());
-            if (i < parameters.length - 1)
-                builder.append(", ");
-        }
-        builder.append(");");
-        method.getBody().add(factory.createStatementFromText(builder.toString(), null));
-        innerClass.add(method);
         innerClass.getModifierList().setModifierProperty("public", true);
         innerClass.getModifierList().setModifierProperty("static", true);
-        PsiMethod builderConstructor = factory.createConstructor();
-        builderConstructor.getModifierList().setModifierProperty("private", true);
-        innerClass.add(builderConstructor);
+
+        PsiMethod constructor = clazz.getConstructors()[0];
+        addInnerFields(innerClass, constructor);
+        addBuildMethod(innerClass, constructor);
+        addConstructor(innerClass);
         clazz.add(innerClass);
-        addBuildMethod(innerClass);
+        addBuilderStaticMethod(innerClass);
         addGetters(constructor);
     }
 
-    private void addBuildMethod(final PsiClass innerClass) {
+    private void addBuilderStaticMethod(final PsiClass innerClass) {
         PsiMethod method = factory.createMethod("builder", factory.createType(innerClass));
         method.getBody().add(factory.createStatementFromText("return new " + innerClass.getName() + "();", null));
         method.getModifierList().setModifierProperty("static", true);
@@ -76,7 +53,7 @@ public class BuilderGenerator {
         PsiParameter[] parameters = constructor.getParameterList().getParameters();
 
         for (PsiField field : clazz.getFields()) {
-            if(!isFieldInConstructorParameters(field, parameters))
+            if (!isFieldInConstructorParameters(field, parameters))
                 continue;
             PsiType type;
             if (field.getType().getPresentableText().contains("List")) {
@@ -97,6 +74,57 @@ public class BuilderGenerator {
         }
     }
 
+    private void addBuildMethod(final PsiClass innerClass, final PsiMethod constructor) {
+        PsiMethod method = factory.createMethod("build", factory.createType(clazz));
+        StringBuilder builder = new StringBuilder();
+        builder.append("return new " + clazz.getName() + "(");
+        PsiParameter[] parameters = constructor.getParameterList().getParameters();
+        for (int i = 0; i < parameters.length; i++) {
+            builder.append(parameters[i].getName());
+            if (i < parameters.length - 1)
+                builder.append(", ");
+        }
+        builder.append(");");
+        method.getBody().add(factory.createStatementFromText(builder.toString(), null));
+        innerClass.add(method);
+    }
+
+    private void addInnerFields(final PsiClass innerClass, final PsiMethod constructor) {
+        for (PsiParameter parameter : constructor.getParameterList().getParameters()) {
+            String name = parameter.getName();
+
+            PsiField innerField = factory.createField(name, parameter.getType());
+            innerField.getModifierList().setModifierProperty("private", true);
+            innerClass.add(innerField);
+
+
+            PsiMethod method = factory.createMethod(name, factory.createType(innerClass));
+            method.getParameterList().add(factory.createParameter(name, parameter.getType()));
+            if (parameter.getType().getPresentableText().contains("List")) {
+                method.getBody().add(factory.createStatementFromText(
+                        "this." + name + ".clear();", null));
+                method.getBody().add(factory.createStatementFromText("if(" + name + " != null){this." + name +
+                        ".addAll(" + name + ");}", null));
+            } else {
+                method.getBody().add(factory.createStatementFromText("this." + name + " = " + name + ";", null));
+            }
+            method.getBody().add(factory.createStatementFromText("return this;", null));
+            innerClass.add(method);
+        }
+    }
+
+    private void addConstructor(final PsiClass innerClass) {
+        PsiMethod builderConstructor = factory.createConstructor();
+        builderConstructor.getModifierList().setModifierProperty("private", true);
+        Stream.of(innerClass.getFields())
+                .filter(field -> field.getType().getPresentableText().contains("List"))
+                .forEach(field -> {
+                    builderConstructor.getBody().add(factory.createStatementFromText("this." + field.getName() +
+                            " = new ArrayList<>();", null));
+                });
+        innerClass.add(builderConstructor);
+    }
+
     private String getNameForGetter(final String name) {
         char[] sequence = name.toCharArray();
         sequence[0] = Character.toUpperCase(sequence[0]);
@@ -112,9 +140,9 @@ public class BuilderGenerator {
     }
 
     private boolean isFieldInConstructorParameters(final PsiField field,
-                                                   final PsiParameter[] parameters){
-        for(PsiParameter parameter : parameters){
-            if(parameter.getName().equals(field.getName())){
+                                                   final PsiParameter[] parameters) {
+        for (PsiParameter parameter : parameters) {
+            if (parameter.getName().equals(field.getName())) {
                 return true;
             }
         }
